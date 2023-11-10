@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "auth_service.fullname" . }}
+  labels:
+    {{- include "auth_service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "auth_service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "auth_service.selectorLabels" . | nindent 8 }}
+    spec:
+      volumes:
+      {{- range $key, $val := .Values.global.secrets }}
+        - name: {{ $val }}
+          secret:
+            secretName: {{ $val }}
+      {{- end}}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: server
+          image: "{{ .Values.auth_service_image.repository }}:{{ .Values.auth_service_image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.auth_service_image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            {{- range $key, $val := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end}}
+          volumeMounts:
+            {{- range $key, $val := .Values.global.secrets }}
+            - name: {{ $val }}
+              readOnly: true
+              mountPath: "/etc/{{ $val }}"
+            {{- end }}
