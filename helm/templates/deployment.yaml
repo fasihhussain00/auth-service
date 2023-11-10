@@ -14,12 +14,6 @@ spec:
       labels:
         {{- include "auth_service.selectorLabels" . | nindent 8 }}
     spec:
-      volumes:
-      {{- range $key, $val := .Values.global.secrets }}
-        - name: {{ $val }}
-          secret:
-            secretName: {{ $val }}
-      {{- end}}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -37,9 +31,3 @@ spec:
             - name: {{ $key }}
               value: {{ $val | quote }}
             {{- end}}
-          volumeMounts:
-            {{- range $key, $val := .Values.global.secrets }}
-            - name: {{ $val }}
-              readOnly: true
-              mountPath: "/etc/{{ $val }}"
-            {{- end }}
