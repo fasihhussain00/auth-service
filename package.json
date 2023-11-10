@@ -38,7 +38,7 @@
   },
   "scripts": {
     "tsc": "tsc",
-    "env": "env-cmd -f .env",
+    "env": "env-cmd -f .env --silent",
     "start": "npm run env -- node src/app.js",
     "start:dev": "npm run env -- ts-node src/app.ts",
     "dev": "npm run env -- nodemon src/app.ts",
@@ -48,9 +48,7 @@
     "migration:revert": "npm run typeorm -- migration:revert",
     "migration:revert:fake": "npm run typeorm -- migration:revert -f",
     "migration:show": "npm run typeorm -- migration:show",
-    "build": "shx rm -rf build && npx tsc && shx cp ./package* ./build/ && shx cp .env ./build/.env && shx mkdir ./build/logs",
-    "build:testing": "shx rm -rf build && npx tsc && shx cp ./package* ./build/ && shx cp .testing.env ./build/.env && shx mkdir ./build/logs",
-    "build:production": "shx rm -rf build && npx tsc && shx cp ./package* ./build/ && shx cp .production.env ./build/.env && shx mkdir ./build/logs",
+    "build": "shx rm -rf build && npx tsc && shx cp ./package* ./build/ && shx cp .env* ./build/",
     "seed": "env-cmd -f .env ts-node ./src/orm/seed/index.ts"
   },
   "author": "",

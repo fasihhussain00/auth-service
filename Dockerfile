@@ -1,7 +1,8 @@
-FROM node:alpine
+FROM node:18-alpine
 WORKDIR /app
-COPY . .
+COPY package*.json .
 RUN npm i
+COPY . .
 RUN npm run build
-CMD cd build && npm run migration:run && npm start
+CMD npm run migration:run && cd build && npm start
 EXPOSE 5001
