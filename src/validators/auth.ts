@@ -52,18 +52,9 @@ export const ssoSchema = Joi.object()
   })
   .unknown(true);
 
-export const changePasswordSchema = Joi.object().keys({
-  usernameOrEmail: Joi.string().required(),
-  password: Joi.string().required(),
-  newPassword: Joi.string().required(),
-});
-
-export const oAuthSchema = Joi.object({
-  redirectUri: Joi.string().uri().required(),
-  failureUri: Joi.string().uri().required(),
-  userId: Joi.number().positive().required(),
-});
-
-export const resetPasswordSchema = Joi.object({
+export const magicLinkSchema = Joi.object().keys({
   email: Joi.string().email().required(),
+  signUpUri: Joi.string().uri().optional().allow(null),
+  loginPageUri: Joi.string().uri().required(),
+  failureUri: Joi.string().uri().required(),
 });

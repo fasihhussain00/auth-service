@@ -8,9 +8,21 @@ import {
   AuthType,
   AzureADAuthConfig,
   GoogleAuthConfig,
+  SendGridConfig,
 } from "../orm/entities/types";
 import { authRepo, userRepo } from "../orm/repo";
 import { AppleSSOAuth } from "../auth/apple";
+import { allowedDomain, getHosts } from "../utils/uri";
+import JwtAuth from "../auth/jwt";
+import SendGrid from "../notification/sendgrid";
+import { getUserAgentInfo } from "../utils/useragent";
+import { getFDate, getFTime } from "../utils/date";
+import appConfig from "../configs/app";
+
+enum MagicLinkType {
+  LOGIN = "login",
+  SIGNUP = "signup",
+}
 
 export const authRegister = async (req: AppAuthRequest, res: Response) => {
   const auth = authRepo.create(req.body as Auth);
@@ -203,4 +215,74 @@ export const appleCallback = async (
   } catch (error) {
     res.redirect(parsedState.failureUri);
   }
+};
+
+export const magicLink = async (req: AppAuthRequest, res: Response) => {
+  const { email, signUpUri, loginPageUri, failureUri } = req.body;
+  const [signUpUriDomain, loginPageUriDomain, failureUriDomain] = getHosts([
+    signUpUri,
+    loginPageUri,
+    failureUri,
+  ]);
+  if (req.clientApp.allowedHosts?.length) {
+    if (
+      !allowedDomain(
+        [signUpUriDomain, loginPageUriDomain, failureUriDomain].filter(
+          (x) => x
+        ),
+        req.clientApp.allowedHosts
+      )
+    ) {
+      return res
+        .status(400)
+        .send({ message: "Given uris or uri domains are not allowed" });
+    }
+  }
+  if (!req.clientApp.allowedEmailHosts.includes(email.split("@").at(-1))) {
+    return res
+      .status(400)
+      .send({ message: "Given email domain is not allowed" });
+  }
+  const user = await userRepo.findOne({
+    where: { email, app: { id: req.clientApp.id } },
+  });
+  const magicLinkType = !user ? MagicLinkType.SIGNUP : MagicLinkType.LOGIN;
+  const magicLinkTemplate =
+    magicLinkType == MagicLinkType.SIGNUP
+      ? req.clientApp.signUpMagicLinkTemplate
+      : req.clientApp.loginMagicLinkTemplate;
+  const magicLinkUri =
+    magicLinkType == MagicLinkType.SIGNUP ? signUpUri : loginPageUri;
+  const magicLinkToken = JwtAuth.signWithAppKey(
+    {
+      email,
+      uri: magicLinkUri,
+      magicLinkType: magicLinkType,
+      appId: req.clientApp.key,
+    },
+    "1h"
+  );
+  if (
+    magicLinkType == MagicLinkType.SIGNUP &&
+    (!signUpUri || !req.clientApp.signUpMagicLinkTemplate)
+  ) {
+    return res.status(404).send({ message: "User not found" });
+  }
+
+  if (!req.clientApp.notificationConfig) {
+    return res.status(400).send("Notification config not found");
+  }
+
+  const { browser, os } = getUserAgentInfo(req.headers["user-agent"] as string);
+  const [fdate, ftime] = [getFDate(), getFTime()];
+  const success = await new SendGrid(
+    req.clientApp.notificationConfig as SendGridConfig
+  ).sendEmail(email, magicLinkTemplate, {
+    link: `${appConfig.baseUrl}/api/magic-link/verify?token=${magicLinkToken}&appId=${req.clientApp.key}`,
+    browser,
+    os,
+    fdate,
+    ftime,
+  });
+  return res.send({ success });
 };

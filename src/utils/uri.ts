@@ -1,5 +1,6 @@
 export const getHosts = (uris: string[]) => {
   const hosts = uris.map((uri) => {
+    if(!uri) return null;
     try {
       const host = new URL(uri).hostname;
       return host;

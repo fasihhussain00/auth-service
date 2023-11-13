@@ -11,12 +11,12 @@ const router = express.Router();
 router.post(
   "/users/register",
   validate(userRegisterSchema, "body"),
-  appAuthorize,
+  appAuthorize(false),
   catchError(registerUser)
 );
 router.get(
   "/users/me",
-  appAuthorize,
+  appAuthorize(false),
   jwtAuthorize,
   catchError(me)
 );

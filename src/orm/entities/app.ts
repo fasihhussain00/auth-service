@@ -62,7 +62,12 @@ export class App {
   @Column({
     nullable: true,
   })
-  magicLinkTemplate?: string;
+  loginMagicLinkTemplate?: string;
+
+  @Column({
+    nullable: true,
+  })
+  signUpMagicLinkTemplate?: string;
 
   @Column({
     nullable: true,

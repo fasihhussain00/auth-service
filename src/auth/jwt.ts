@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 import { JwtAuthConfig } from "../orm/entities/types";
 import crypto from "crypto";
+import appConfig from "../configs/app";
 
 export interface IKeyPair {
   publicKey: string;
@@ -28,6 +29,12 @@ class JwtAuth {
     return jwt.sign(payload, this.config.privateKey, {
       expiresIn,
       algorithm: "RS256",
+    });
+  }
+  static signWithAppKey(payload: any, expiresIn: string): string {
+    return jwt.sign(payload, appConfig.jwtSecret, {
+      expiresIn,
+      algorithm: "HS256",
     });
   }
 
