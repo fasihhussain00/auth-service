@@ -11,7 +11,7 @@ import {
   JwtAuthConfig,
   SendGridConfig,
 } from "../orm/entities/types";
-import { appRepo, authRepo, userRepo } from "../orm/repo";
+import { appRepo, authRepo, tokenRepo, userRepo } from "../orm/repo";
 import { AppleSSOAuth } from "../auth/apple";
 import { allowedDomain, getHosts } from "../utils/uri";
 import JwtAuth from "../auth/jwt";
@@ -262,6 +262,7 @@ export const magicLink = async (req: AppAuthRequest, res: Response) => {
     },
     "1h"
   );
+  await tokenRepo.save({ token: magicLinkToken });
   if (
     magicLinkType == MagicLinkType.SIGNUP &&
     (!signUpUri || !req.clientApp.signUpMagicLinkTemplate)
@@ -275,8 +276,6 @@ export const magicLink = async (req: AppAuthRequest, res: Response) => {
 
   const { browser, os } = getUserAgentInfo(req.headers["user-agent"] as string);
   const [fdate, ftime] = [getFDate(), getFTime()];
-  console.log(`${appConfig.baseUrl}/api/auth/magic-link/verify?token=${magicLinkToken}`);
-  
   const success = await new SendGrid(
     req.clientApp.notificationConfig as SendGridConfig
   ).sendEmail(email, magicLinkTemplate, {
@@ -294,6 +293,11 @@ export const magicLinkVerify = async (
   next: NextFunction
 ) => {
   const { token } = req.query;
+  if (
+    !(await tokenRepo.exist({ where: { token: token as string, used: false } }))
+  ) {
+    res.status(400).send({ message: "Invalid token" });
+  }
   const { email, uri, magicLinkType, failureUri, appKey } =
     JwtAuth.verifyWithAppKey(token);
   if (magicLinkType == MagicLinkType.SIGNUP) {
