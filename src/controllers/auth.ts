@@ -148,19 +148,19 @@ export const azureADCallback = async (
 
 export const apple = async (req: AppAuthRequest, res: Response) => {
   const { callbackUri, failureUri } = req.query as any;
-  const azureADAuth = await authRepo.findOne({
-    where: { type: AuthType.AZUREAD, app: { id: req.clientApp.id } },
+  const appleAuth = await authRepo.findOne({
+    where: { type: AuthType.APPLE, app: { id: req.clientApp.id } },
   });
-  if (!azureADAuth) {
+  if (!appleAuth) {
     return res.status(400).send("Apple auth not configured for this app");
   }
-  const azureADSSO = new AzureADSSOAuth(
-    azureADAuth.config as AzureADAuthConfig
+  const appleSSO = new AppleSSOAuth(
+    appleAuth.config as AppleAuthConfig
   );
   const state = Buffer.from(
     JSON.stringify({ callbackUri, failureUri, appId: req.clientApp.id })
   ).toString("base64");
-  const redirectUri = await azureADSSO.getLoginUrl(state, failureUri as string);
+  const redirectUri = appleSSO.getLoginUrl(state);
   if (!redirectUri) {
     return res
       .status(400)
@@ -177,12 +177,12 @@ export const appleCallback = async (
   const { state, code } = req.query as any;
   const parsedState = JSON.parse(Buffer.from(state, "base64").toString());
   try {
-    const appleADAuth = await authRepo.findOne({
+    const appleAuth = await authRepo.findOne({
       where: { type: AuthType.APPLE, app: { id: parsedState.appId } },
       relations: ["app"],
     });
     const appleSSO = new AppleSSOAuth(
-      appleADAuth.config as AppleAuthConfig
+      appleAuth.config as AppleAuthConfig
     );
     const token = await appleSSO.getToken(code);
     const { name, email, id } = await appleSSO.getUserInfo(token);
@@ -192,10 +192,10 @@ export const appleCallback = async (
         email,
         name,
         sourceId: id,
-        app: appleADAuth.app,
+        app: appleAuth.app,
       });
     }
-    req.clientApp = appleADAuth.app;
+    req.clientApp = appleAuth.app;
     user.app = undefined;
     req.user = user;
     req["redirectUri"] = parsedState.callbackUri;

@@ -8,6 +8,7 @@ export class AppleSSOAuth {
     const authorizationEndpoint = "https://appleid.apple.com/auth/authorize";
     const params = new URLSearchParams();
     params.append("response_type", "code id_token");
+    params.append("response_mode", "form_post");
     params.append("client_id", this.config.clientId);
     params.append(
       "redirect_uri",
