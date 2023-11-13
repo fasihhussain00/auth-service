@@ -1,7 +1,6 @@
 import express from "express";
 import { json } from "express";
 import fileupload from "express-fileupload";
-import cors from "cors";
 import appConfig from "./configs/app";
 import { getRouters } from "./routers";
 import helmet from "helmet";
@@ -28,7 +27,6 @@ function addBodyParser() {
 }
 
 function addCors() {
-  // app.use(cors(appConfig.corsOptions));
   app.use(customCorsHandler);
 }
 

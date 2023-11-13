@@ -73,6 +73,7 @@ export class User {
   }
 
   passwordMatch(unencryptedPassword: string) {
+    if(!unencryptedPassword || !this.password) return false;
     return validateHash(unencryptedPassword, this.password);
   }
   toJSON(): Partial<User> {

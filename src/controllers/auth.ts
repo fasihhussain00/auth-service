@@ -37,9 +37,9 @@ export const login = async (
   next: NextFunction
 ) => {
   const { email, password } = req.body;
-  const user = await userRepo.findOne({ where: { email: email } });
+  const user = await userRepo.findOne({ where: { email: email, app: {id: req.clientApp.id} } });
   if (!user || !user.passwordMatch(password)) {
-    return res.status(401).send("Invalid email or password");
+    return res.status(401).send({message: "Invalid email or password"});
   }
   req.user = user;
   next();
