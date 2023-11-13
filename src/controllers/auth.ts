@@ -275,10 +275,12 @@ export const magicLink = async (req: AppAuthRequest, res: Response) => {
 
   const { browser, os } = getUserAgentInfo(req.headers["user-agent"] as string);
   const [fdate, ftime] = [getFDate(), getFTime()];
+  console.log(`${appConfig.baseUrl}/api/auth/magic-link/verify?token=${magicLinkToken}`);
+  
   const success = await new SendGrid(
     req.clientApp.notificationConfig as SendGridConfig
   ).sendEmail(email, magicLinkTemplate, {
-    link: `${appConfig.baseUrl}/api/magic-link/verify?token=${magicLinkToken}`,
+    link: `${appConfig.baseUrl}/api/auth/magic-link/verify?token=${magicLinkToken}`,
     browser,
     os,
     fdate,

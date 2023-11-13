@@ -78,6 +78,12 @@ router.get(
   generateToken,
   sendToken({ cookie: true, redirect: true })
 );
+router.post(
+  "/auth/magic-link",
+  appAuthorize(false),
+  validate(magicLinkSchema, "body"),
+  catchError(magicLink),
+);
 router.get(
   "/auth/magic-link/verify",
   catchError(magicLinkVerify),
