@@ -8,9 +8,10 @@ import {
   AuthType,
   AzureADAuthConfig,
   GoogleAuthConfig,
+  JwtAuthConfig,
   SendGridConfig,
 } from "../orm/entities/types";
-import { authRepo, userRepo } from "../orm/repo";
+import { appRepo, authRepo, userRepo } from "../orm/repo";
 import { AppleSSOAuth } from "../auth/apple";
 import { allowedDomain, getHosts } from "../utils/uri";
 import JwtAuth from "../auth/jwt";
@@ -37,9 +38,11 @@ export const login = async (
   next: NextFunction
 ) => {
   const { email, password } = req.body;
-  const user = await userRepo.findOne({ where: { email: email, app: {id: req.clientApp.id} } });
+  const user = await userRepo.findOne({
+    where: { email: email, app: { id: req.clientApp.id } },
+  });
   if (!user || !user.passwordMatch(password)) {
-    return res.status(401).send({message: "Invalid email or password"});
+    return res.status(401).send({ message: "Invalid email or password" });
   }
   req.user = user;
   next();
@@ -153,7 +156,7 @@ export const azureADCallback = async (
     req["redirectUri"] = parsedState.callbackUri;
     next();
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.redirect(parsedState.failureUri);
   }
 };
@@ -166,9 +169,7 @@ export const apple = async (req: AppAuthRequest, res: Response) => {
   if (!appleAuth) {
     return res.status(400).send("Apple auth not configured for this app");
   }
-  const appleSSO = new AppleSSOAuth(
-    appleAuth.config as AppleAuthConfig
-  );
+  const appleSSO = new AppleSSOAuth(appleAuth.config as AppleAuthConfig);
   const state = Buffer.from(
     JSON.stringify({ callbackUri, failureUri, appId: req.clientApp.id })
   ).toString("base64");
@@ -193,9 +194,7 @@ export const appleCallback = async (
       where: { type: AuthType.APPLE, app: { id: parsedState.appId } },
       relations: ["app"],
     });
-    const appleSSO = new AppleSSOAuth(
-      appleAuth.config as AppleAuthConfig
-    );
+    const appleSSO = new AppleSSOAuth(appleAuth.config as AppleAuthConfig);
     const token = await appleSSO.getToken(code);
     const { name, email, id } = await appleSSO.getUserInfo(token);
     let user = await userRepo.findOne({ where: { email } });
@@ -257,8 +256,9 @@ export const magicLink = async (req: AppAuthRequest, res: Response) => {
     {
       email,
       uri: magicLinkUri,
+      failureUri,
       magicLinkType: magicLinkType,
-      appId: req.clientApp.key,
+      appKey: req.clientApp.key,
     },
     "1h"
   );
@@ -278,11 +278,36 @@ export const magicLink = async (req: AppAuthRequest, res: Response) => {
   const success = await new SendGrid(
     req.clientApp.notificationConfig as SendGridConfig
   ).sendEmail(email, magicLinkTemplate, {
-    link: `${appConfig.baseUrl}/api/magic-link/verify?token=${magicLinkToken}&appId=${req.clientApp.key}`,
+    link: `${appConfig.baseUrl}/api/magic-link/verify?token=${magicLinkToken}`,
     browser,
     os,
     fdate,
     ftime,
   });
   return res.send({ success });
+};
+export const magicLinkVerify = async (
+  req: AppAuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const { token } = req.query;
+  const { email, uri, magicLinkType, failureUri, appKey } =
+    JwtAuth.verifyWithAppKey(token);
+  if (magicLinkType == MagicLinkType.SIGNUP) {
+    return res.redirect(uri);
+  }
+  if (magicLinkType == MagicLinkType.LOGIN) {
+    const app = await appRepo.findOne({ where: { key: appKey } });
+    req.clientApp = app;
+    const user = await userRepo.findOne({
+      where: { email, app: { key: appKey } },
+    });
+    if (user) {
+      req.user = user;
+      req["redirectUri"] = uri;
+      return next();
+    }
+  }
+  res.redirect(failureUri);
 };

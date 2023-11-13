@@ -37,6 +37,9 @@ class JwtAuth {
       algorithm: "HS256",
     });
   }
+  static verifyWithAppKey(token: any): any {
+    return jwt.verify(token, appConfig.jwtSecret);
+  }
 
   verify(token: string): any {
     return jwt.verify(token, this.config.publicKey, { algorithms: ["RS256"] });

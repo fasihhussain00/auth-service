@@ -9,10 +9,16 @@ import {
   googleCallback,
   login,
   magicLink,
+  magicLinkVerify,
 } from "../controllers/auth";
 import { catchError } from "../middleware/error";
 import { validate } from "../middleware/validation";
-import { authRegisterSchema, ssoSchema, loginSchema, magicLinkSchema } from "../validators/auth";
+import {
+  authRegisterSchema,
+  ssoSchema,
+  loginSchema,
+  magicLinkSchema,
+} from "../validators/auth";
 import { appAuthorize } from "../middleware/app";
 import { ssoDomainValidation } from "../middleware/sso";
 import { generateToken, sendToken } from "../middleware/jwt";
@@ -72,10 +78,10 @@ router.get(
   generateToken,
   sendToken({ cookie: true, redirect: true })
 );
-router.post(
-  "/auth/magic-link",
-  appAuthorize(false),
-  validate(magicLinkSchema, "body"),
-  catchError(magicLink),
+router.get(
+  "/auth/magic-link/verify",
+  catchError(magicLinkVerify),
+  generateToken,
+  sendToken({ cookie: true, redirect: true })
 );
 export default router;
