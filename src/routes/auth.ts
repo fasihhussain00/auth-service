@@ -46,14 +46,14 @@ router.get(
   sendToken({ cookie: true, redirect: true })
 );
 router.get(
-  "/auth/azure-ad",
+  "/auth/microsoft",
   appAuthorize,
   validate(ssoSchema, "query"),
   ssoDomainValidation,
   catchError(azureAd)
 );
 router.get(
-  "/auth/azure-ad/callback",
+  "/auth/microsoft/callback",
   catchError(azureADCallback),
   generateToken,
   sendToken({ cookie: true, redirect: true })

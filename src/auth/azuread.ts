@@ -4,6 +4,7 @@ import appConfig from "../configs/app";
 
 export class AzureADSSOAuth {
   private readonly msalClient: msal.ConfidentialClientApplication;
+  private readonly redirectUri: string;
 
   constructor(config: AzureADAuthConfig) {
     const msalConfig: msal.Configuration = {
@@ -14,12 +15,12 @@ export class AzureADSSOAuth {
       },
     };
     this.msalClient = new msal.ConfidentialClientApplication(msalConfig);
+    this.redirectUri = `${appConfig.baseUrl}/api/auth/microsoft/callback`;
   }
 
   async getLoginUrl(state: string, failureUri: string) {
-    const redirectUri = `${appConfig.baseUrl}/api/auth/azure-ad/callback`;
     const authCodeUrlParameters: msal.AuthorizationUrlRequest = {
-      redirectUri,
+      redirectUri: this.redirectUri,
       scopes: ["user.read"],
       state,
       prompt: "select_account",
@@ -39,7 +40,7 @@ export class AzureADSSOAuth {
   async getToken(authCode: string) {
     const tokenRequest: msal.AuthorizationCodeRequest = {
       code: authCode,
-      redirectUri: `${appConfig.baseUrl}/api/auth/azure-ad/callback`,
+      redirectUri: this.redirectUri,
       scopes: ["user.read"],
     };
 
