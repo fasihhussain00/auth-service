@@ -2,15 +2,12 @@
 
 ## **App**
 
----
 
 ### Dependecies:
 
 1. `node`
 
 ## **Deployment**
-
----
 
 ### Docker Image Build
 
@@ -50,13 +47,13 @@
 `npm run migration:generate --name=new-migration-nsme-small-description` generate new migration
 `npm run migration:run` run all unapplied migrations
 
-### How to use (For Dev)
+### How to use
 
 ---
 
 - `npm i` to install all packages.
-- create `.env` file at the root project directory.
-- `npm run migration:run` ton apply all migration to db.
+- create `.env` file at the root project directory use .env.example for variables.
+- `npm run migration:run` to apply all migration to db.
 - `npm run dev` to run dev server.
 - `npm run build` to generate a build using `.env` file.
 - `npm start` to run app after build.

@@ -11,4 +11,6 @@ setup: package.json
 	npm i
 clean:
 	rm -rf node_modules
+migrate:
+	npm run migrate
 .PHONY: run clean setup dockerrun dockerpull dockerpush
